@@ -1,0 +1,224 @@
+#include <iostream>
+using namespace std;
+
+#include <string>
+
+struct Transformer;
+struct Number;
+struct BinaryOperation;
+struct FunctionCall;
+struct Variable;
+
+struct Expression
+{
+  virtual ~Expression() { }
+  virtual double evaluate() const = 0;
+  virtual Expression *transform(Transformer *tr) const = 0;
+};
+
+struct Transformer
+{
+  virtual ~Transformer() { }
+  virtual Expression *transformNumber(Number const *) = 0;
+  virtual Expression *transformBinaryOperation(BinaryOperation const *) = 0;
+  virtual Expression *transformFunctionCall(FunctionCall const *) = 0;
+  virtual Expression *transformVariable(Variable const *) = 0;
+};
+
+struct Number : Expression
+{
+  Number(double value);
+  double value() const;
+  double evaluate() const;
+  Expression *transform(Transformer *tr) const;
+
+private:
+  double value_;
+};
+
+struct BinaryOperation : Expression
+{
+  enum {
+    PLUS = '+',
+    MINUS = '-',
+    DIV = '/',
+        MUL = '*'
+  };
+  BinaryOperation(Expression const *left, int op, Expression const *right);
+  ~BinaryOperation();
+  double evaluate() const;
+  Expression *transform(Transformer *tr) const;
+  Expression const *left() const;
+  Expression const *right() const;
+  int operation() const;
+
+private:
+  Expression const *left_;
+  Expression const *right_;
+  int op_;
+};
+
+struct FunctionCall : Expression
+{
+  FunctionCall(std::string const &name, Expression const *arg);
+  ~FunctionCall();
+  double evaluate() const;
+  Expression *transform(Transformer *tr) const;
+  std::string const &name() const;
+  Expression const *arg() const;
+
+private:
+  std::string const name_;
+  Expression const *arg_;
+};
+
+struct Variable : Expression
+{
+  Variable(std::string const name);
+  std::string const & name() const;
+  double evaluate() const;
+  Expression *transform(Transformer *tr) const;
+
+private:
+  std::string const name_;
+};
+
+
+/**
+ * реализуйте все необходимые методы класса
+ * вы можете определять любые вспомогательные
+ * методы, если хотите
+ */
+
+/**
+Решение примерно по строчке на каждый метод!
+Рекурсия.
+
+Вроде бы все очевидно, в каждом методе создаю новый экзепляр при
+помощи new, примитивы прокидываю как есть (типа, number->value()), от
+Expression'ов беру ->transform(this).
+
+По моей логике дерево должно собраться рекурсивно само, но вот что-то
+идет не так.
+
+
+Вы возвращаете указатели на существующие узлы, т.к. указатель хранит
+адрес,адрес просто копируется (адрес старого узла). Создавайте узлы с
+параметрами (это тоже узлы), возвращенными функцией трансформ (это и
+есть рекурсия). Как то так:)
+
+ */
+
+    //Expression cbinop = new BinaryOperation(binop);
+    //return cbinop->transform(this); 
+    // return binop->transform(this); 
+
+    //Number cnumber = number->value();
+    //return cnumber.transform(this); 
+
+    //Expression* exp = new Transformer(number->transform(this));
+    //Expression * res = new Number(exp->value());
+    //return res;
+
+    // number->transform(this) -- Expression
+    // this - это Transformer, то есть CopySyntaxTree
+
+    //Expression * exp = number->transform(this);
+
+    //Expression * res = new Number(exp->transform(exp)->value());
+
+struct CopySyntaxTree : Transformer
+{
+  Expression *transformNumber(Number const *number)
+  { 
+    //Expression * exp = new Number(number->value());
+    //return  exp->transform(this);
+    //Expression * exp = new Number(number->value());
+    //return (Expression *) number;
+    Expression * exp = new Number(number->value());
+    return exp;
+  }
+
+  Expression *transformBinaryOperation(BinaryOperation const *binop)
+  { 
+    //Expression *exp = new BinaryOperation(binop->left(), binop->operation(), 
+    //binop->right());
+    //return exp->transform(this);
+    Expression * exp = new BinaryOperation((binop->left())->transform(this), 
+					   binop->operation(),
+					   (binop->right())->transform(this));
+    return exp;
+  }
+
+  Expression *transformFunctionCall(FunctionCall const *fcall)
+  { 
+    /*
+    Expression *exp = new FunctionCall(fcall->name(), fcall->arg());
+    return exp->transform(this); */
+    Expression * exp = new FunctionCall(fcall->name(), 
+					(fcall->arg())->transform(this));
+    return exp;
+  }
+
+  Expression *transformVariable(Variable const *var)
+  { 
+    //std::string const & cname = var->name();
+    // Expression *exp = new Variable(var->name());
+    //return exp->transform(this); 
+    //return (Expression *) var;
+    Expression *exp = new Variable(var->name());
+    return exp;
+  }
+
+  ~CopySyntaxTree() { };
+
+};
+
+// added by vrs
+int main() {
+  
+  Expression *expression = new Number(10.0);
+  Transformer *transformer = new CopySyntaxTree();
+  Expression *new_expression = expression->transform(transformer);
+
+  delete expression;
+  delete transformer;
+  cout << "number: " << new_expression->evaluate() << endl;
+  delete new_expression;
+
+  /*
+  expression = new Variable("x");
+  transformer = new CopySyntaxTree();
+  new_expression = expression->transform(transformer);
+
+  delete expression;
+  delete transformer;
+  //cout<<"new variable: "<<new_expression->evaluate()<<endl;
+  delete new_expression;
+
+  enum { PLUS = '+', MINUS = '-', DIV = '/', MUL = '*' };
+  struct Number *x = new Number(2);
+  struct Number *y = new Number(3);
+
+  expression = new BinaryOperation(x,MUL,y);
+  transformer = new CopySyntaxTree();
+  new_expression = expression->transform(transformer);
+
+  delete expression;
+  delete transformer;
+  cout<<"binary operation: "<<new_expression->evaluate()<<endl;
+  delete new_expression;
+
+  expression = new FunctionCall("sqrt",x);
+  transformer = new CopySyntaxTree();
+  new_expression = expression->transform(transformer);
+
+  delete expression;
+  delete transformer;
+  cout<<"function call: "<<new_expression->evaluate()<<endl;
+  delete new_expression;
+
+  */
+  //system("pause");
+  return 0;
+}

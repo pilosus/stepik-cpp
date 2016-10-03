@@ -1,0 +1,235 @@
+============================== Step 2 ==============================
+Копирование объектов
+
+struct IntArra {
+  ...
+private:
+  size_t size_;
+  int * data_;
+};
+
+int main() {
+  IntArray a1(10);
+  IntArray a2(20);
+  IntArray a3 = a1; // копирование
+  a2 = a1; // присваивание
+
+  return 0;
+
+}
+
+При запуске программы столкнемся с ошибкой времени исполнения.
+Потому что a3 (a2 тоже!) ссылается на тот же массив, что и a1.
+Поэтому при выходе из программы деструктор a3 освободит память из-под
+массива, когда будет, а потом и деструктор a1 попытается освободить
+уже свободную память!
+
+Кроме того здесь есть утечка памяти: после присвоения а2 ссылки на
+массив а1, мы потеряли ссылку на массив размера двадцать, не
+освободили эту память!
+
+============================== Step 3 ==============================
+
+Если не определить конструктор копирования, то он сгенерируется
+компилятором
+
+struct IntArray {
+  // конструктор копирования принимает ссылку на объект!
+  IntArray(IntArray const & a)
+    : size_(a.size_), data_(new int[size_])
+    {
+      for (size_t i = 0; i != size_; ++i)
+      	  data_[i] = a.data_[i]
+    }
+private:
+  size_t size_;
+  int * data_;
+};
+
+============================== Step 4 ==============================
+Оператор присваивания
+
+Если не определить оператор присваивания, то он тоже сгенерируется
+компиляторов
+
+struct IntArray {
+  IntArray & operator=(IntArray const & a)
+  {
+	if (this != &a) {
+	   delete [] data_;
+	   size_ = a.size_;
+	   data_ = new int[size_];
+	   for (size_t i = 0; i != size_; ++i) {
+	       data_[i] = a.data_[i];
+	   }
+	}
+	return *this; // ссылка на текущий экземпляр объекта
+  }
+
+private:
+  size_t size_;
+  int * data_;
+};
+
+============================== Step 5 ==============================
+Метод swap - упрощение оператора присваивания
+
+struct IntArray {
+  void swap(IntArray & a) {
+       size_t const t1 = size_;
+       size_ = a.size_;
+       a.size_ = t1;
+
+       int * const t2 = data_;
+       data_ = a.data_;
+       a.data_ = t2;
+  }
+  ...
+
+private:
+  size_t size_;
+  int * data_;
+};
+
+Можно использовать функцию std::swap и файл algorithm
+
+#include <algorithm>
+
+struct IntArray {
+  void swap(IntArray & a) {
+       std::swap(size_, a.size_);
+       std::swap(data_, a.data_);
+  }
+  ...
+private:
+  size_t size_;
+  int * data_;
+};
+
+============================== Step 6, 7 ==============================
+Реализация оператора = при помощи swap
+
+struct IntArray {
+  IntArray(IntArray const & a)
+    : size_(a.size_), data_(new int[size_]) {
+      for (size_t i = 0; i != size_; ++i)
+      	  data_[i] = a.data_[i];
+    }
+  IntArray & operator=(IntArray const & a) {
+    if (this != & a)
+       IntArray(a).swap(*this);
+    return *this;
+  }
+  ...
+private:
+  size_t size_;
+  int * data_;
+};
+
+Запрет копирования объектов
+
+Для того чтобы запретить копирование, нужно объявить конструктор
+копирования и оператор присваивания как private и не определять их
+
+struct IntArray {
+  ...
+private:
+  IntArray(IntArray const & a);
+  IntArray & operator=(IntArray const& a);
+
+  size_t size_;
+  int * data_;
+};
+
+============================== Step 8 ==============================
+Методы, генерируемые компилятором
+1. Конструктор по умолчанию
+2. Конструктор копирования
+3. Оператор присваивания
+4. Деструктор
+
+Если потребовалось переопределить конструктор копирования, оператор
+присваивания или деструктор, то нужно переопределить и остальные
+методы этого списка!
+
+============================== Step 9 ==============================
+Добавьте в класс String реализацию конструктора копирования.
+
+Sample Input:
+There is no test input
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds
+
+Оригинал
+
+#include <cstddef>
+#include <cstring>
+
+struct String {
+    String(const char *str = "");
+    String(size_t n, char c);
+    ~String();
+
+    String(const String &str) {
+        // put your code here
+    }
+
+    size_t size() const;
+    const char *c_str() const;
+    char & at(size_t idx);
+    char at(size_t idx) const;
+    int compare(const String &str) const;
+
+    void append(const String &str);
+
+    size_t size_;
+    char *str_;
+};
+
+Источник: str.cpp
+
+============================== Step 10 ==============================
+
+Завершите класс String, добавив к нему оператор присваивания.
+
+Sample Input:
+There is no test input
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Изначальная сигнатура:
+
+#include <algorithm> // swap
+#include <cstddef>
+#include <cstring>
+
+struct String {
+    String(const char *str = "");
+    String(size_t n, char c);
+    String(const String &str);
+    ~String();
+
+    String &operator=(const String &str) {
+        // put your code here
+    }
+
+    size_t size() const;
+    const char *c_str() const;
+    char & at(size_t idx);
+    char at(size_t idx) const;
+    int compare(const String &str) const;
+
+    void append(const String &str);
+
+    size_t size_;
+    char *str_;
+};
+

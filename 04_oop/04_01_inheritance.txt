@@ -1,0 +1,188 @@
+============================== Step 2 ==============================
+Наследование -- это механизм, позволяющий создавать производные
+классы, расширяя уже существующие
+
+struct Person {
+  string name() const { return name_; } 
+  int age() const { return age_; }
+private:
+  string name_;
+  int age_; };
+
+// Класс, производный от Person -- с теми же полями и методами + со своими
+// полями и методами
+struct Student : Person {
+  string university() const { return uni_; }
+private:
+  string uni_;
+};
+
+============================== Step 3 ==============================
+
+У объектов класса-наследника можно вызывать публичные методы
+родительского класса.
+
+Student s;
+cout << s.name() << endl // методы из класса Person
+     << s.age() << endl
+     << s.university() << endl; // метод из класса Student
+
+Внутри объекта класса-наследника хранится экземпляр родительского
+класса.
+
+============================== Step 4 ==============================
+При создании объекта производного класса сначала вызывается
+конструктор родительского класса.
+
+struct Person {
+  Person(string name, int age)
+  : name_(name), age_(age) {}
+  ... 
+};
+struct Student : Person {
+  Student(string name, int age, string uni)
+  : Person(name, age), uni_(uni) {}
+  ... 
+};
+
+После деструктора Student вызывается деструктор Person
+
+============================== Step 5 ==============================
+Приведения
+Для производных классов определены следующие приведения:
+
+Student s("Alex", 21, "Oxford"); Person&l=s; //Student&->Person&
+Person * r = &s; // Student * -> Person *
+
+Поэтому объекты класса-наследника могут присваиваться объектам
+родительского класса:
+
+Student s("Alex", 21, "Oxford");
+Person p = s; // Person("Alex", 21); // два поля будут СКОПИРОВАНЫ в
+       	      // класс Person, т.е. вызывается конструктор копирования
+
+При этом копируются только поля класса-родителя (срезка). (Т.е. в
+данном случае вызывается конструктор копирования 
+Person(Person const& p), который не знает про uni_.)
+
+============================== Step 6 ==============================
+Модификатор доступа protected
+
+• Класс-наследник не имеет доступа к private-членам
+родительского класса.
+
+• Для определения закрытых членов класса доступных наследникам
+используется модификатор protected.
+
+struct Person { 
+  ...
+// не стоит использовать для полей, а для методов ОК
+protected:
+  string name_;
+  int age_; 
+};
+
+struct Student : Person {
+ ... / / можно менять поля name_ и age_
+};
+
+============================== Step 7 ==============================
+
+Свяжите следующие классы в иерархию наследования: Character
+(Персонаж), LongRange (Персонаж дальнего действия), Wizard (Маг),
+SwordsMan (Мечник), Archer (Лучник).
+
+Обратите внимание на методы, объявленные в классах - они приведены в
+качестве описания интерфейса, которым должны обладать классы. Не
+изменяйте объявлений методов - они даны как подсказка, просто добавьте
+наследование в определения классов.
+
+Sample Input:
+There is no input for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Оригинальный класс:
+
+#include <string> // std::string
+
+struct Character
+{
+    std::string const & name() const;
+    unsigned health() const;
+};
+
+struct LongRange
+{
+    std::string const & name() const;
+    unsigned health() const;
+
+    unsigned range() const;
+};
+
+struct SwordsMan
+{
+    std::string const & name() const;
+    unsigned health() const;
+
+    unsigned strength() const;    
+};
+
+struct Wizard
+{
+    std::string const & name() const;
+    unsigned health() const;
+
+    unsigned range() const;
+
+    unsigned mana() const;
+};
+
+struct Archer
+{
+    std::string const & name() const;
+    unsigned health() const;
+
+    unsigned range() const;
+
+    unsigned accuracy() const;
+};
+
+Источник: character.cpp
+
+============================== Step 8 ==============================
+
+В немного более общем случае синтаксис наследования выглядит следующим
+образом:
+
+struct Derived : <modifier> Base { };
+
+где <modifier> - это одно из ключевых слов public, protected или
+private. Нас на данном этапе интересует только публичное (public)
+наследование, поэтому смысл других модификаторов не столь важен. Если
+модификатор не указан явно, то используется модификатор по-умолчанию,
+и важно знать, что для структур по-умолчанию используется модификатор
+public (как раз то, что нам нужно), т. е. в примере:
+
+struct Student : Person { };
+
+Student публично (public) наследуется от класса Person. А для классов
+(в противовес структурам) по-умолчанию используется модификатор
+private, т. е. в примере:
+
+class Student : Person { };
+
+Student приватно (private) наследуется от класса Person (не то, чего
+мы хотим). Чтобы унаследовать класс Student от класса Person публично
+(то, что мы хотим), необходимо явно указать модификатор:
+
+class Student : public Person { };
+
+При этом не важно, является ли Person классом или структурой, важно
+лишь то, является ли наследник (Student) структурой или классом (в
+терминах C++). Эта тема будет подробнее раскрыта в конце этой недели.
+

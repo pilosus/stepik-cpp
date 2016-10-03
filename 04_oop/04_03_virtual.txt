@@ -1,0 +1,254 @@
+============================== Step 2 ==============================
+// Переопределение методов (overriding)
+
+// В отличие от перезагрузки метода, мы определяем метод с тем же
+// именем и сигнатурой, что и в родительском (базовом) классе, чтобы
+// определить его по-другому
+
+struct Person {
+  string name() const { return name_; } 
+  ...
+};
+
+struct Professor : Person {
+  string name() const {
+    return "Prof. " + Person::name(); // явное указание на
+				      // использование метода name из
+				      // базового класса Person
+  }
+  ... 
+};
+
+
+Professor pr("Stroustrup");
+cout << pr.name() << endl; // Prof. Stroustrup 
+Person * p = &pr; // Указатель типа Person, проинициализированный
+		  // адресом на переменную типа Professor
+cout << p->name() << endl; // Stroustrup
+
+============================== Step 3 ==============================
+Виртуальные методы
+
+struct Person {
+  // virtual
+  virtual string name() const { return name_; } 
+  ...
+};
+
+struct Professor : Person {
+  string name() const {
+    return "Prof. " + Person::name();
+  }
+  ... 
+};
+
+Professor pr("Stroustrup");
+cout << pr.name() << endl; // Prof. Stroustrup 
+Person * p = &pr;
+cout << p->name() << endl; // Prof. Stroustrup
+
+============================== Step 4 ==============================
+Чистые виртуальные (абстрактные) методы
+
+
+struct Person {
+  // Реализация отсутствует, поэтому создание объекта типа Person и
+  // вызов над ним метода occupation приведет к ошибке компиляции. Так
+  // что у виртуального класса нельзя создавать экземпляр!
+  virtual string ocupation () const = 0; 
+  ...
+};
+struct Student : Person {
+  string ocupation() const {return "student";}
+  ... };
+struct Professor : Person {
+  string ocupation() const {return "professor";} 
+  ...
+};
+
+Person * p = next_person (); 
+cout << p->ocupation();
+
+============================== Step 5 ==============================
+Виртуальный деструкто
+
+К чему приведёт такой код?
+
+struct Person { 
+  ...
+};
+
+struct Student : Person {
+  ... 
+private:
+  string uni_; };
+
+int main() {
+  Person * p = new Student("Alex", 21, "Oxford"); 
+  ...
+  delete p; // Будет вызван деструктор ~Person() и строка uni
+	    // повиснет в памяти, т.е. он ее не удалит -> memory leak
+}
+
+Правильная реализация:
+
+struct Person { 
+  ...
+  virtual ~Person() {} // Виртуальный деструктор в базовом классе
+};
+
+struct Student : Person { 
+  ...
+private:
+  string uni_;
+};
+
+int main() {
+  Person * p = new Student("Alex", 21, "Oxford"); 
+  ...
+  delete p; // Вызывается деструктор ~Student(), а он в свою очередь
+	    // вызовет деструктор базового класса
+}
+
+// Виртуальный деструктор важен, когда пишется класс, от которого
+// будут наследовать другие классы
+// нужно писать виртуальный деструктор, чтобы с наследуемым классом
+// можно было общаться через указатель на базовый класс
+
+============================== Step 6 ==============================
+Полиморфизм
+Возможность единообразно обрабатывать разные типы данных.
+
+Два вида механизма полиморфизма:
+1) Перегрузка функций
+Выбор функции происходит в момент компиляции на основе типов
+аргументов функции, статический полиморфимз (полиморфизм времени
+компиляци). 
+
+2) Виртуальные методы
+Выбор метода происходит в момент выполнения на основе типа объекта, у
+которого вызывается виртуальный метод, динамический полиморфм
+(полиморфизм времени выполнения)
+
+============================== Step 7 ==============================
+
+
+Вам даны классы BinaryOperation (бинарный оператор) и Number (число),
+которые наследуются от базового класса Expression (выражение). Ваша
+задача реализовать базовый класс Expression так, чтобы не было утечек
+памяти. Кроме этого подумайте, какие методы стоит сделать
+виртуальными.
+
+Sample Input:
+There is no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Начальная сигнатура:
+
+#include <cassert> // assert
+
+struct Expression
+{
+// put your code here
+};
+
+struct Number : Expression
+{
+    Number(double value)
+        : value_(value)
+    {}
+
+    double value() const
+    { return value_; }
+
+    double evaluate() const
+    { return value_; }
+
+private:
+    double value_;
+};
+
+struct BinaryOperation : Expression
+{
+    enum {
+        PLUS = '+',
+        MINUS = '-',
+        DIV = '/',
+        MUL = '*'
+    };
+
+    BinaryOperation(Expression const *left, int op, Expression const
+    *right)
+        : left_(left), op_(op), right_(right)
+    { assert(left_ && right_); }
+
+    ~BinaryOperation()
+    {
+        delete left_;
+        delete right_;
+    }
+
+    Expression const *left() const
+    { return left_; }
+
+    Expression const *right() const
+    { return right_; }
+
+    int operation() const
+    { return op_; }
+
+    double evaluate() const
+    {
+        double left = left_->evaluate();
+        double right = right_->evaluate();
+        switch (op_)
+        {
+        case PLUS: return left + right;
+        case MINUS: return left - right;
+        case DIV: return left / right;
+        case MUL: return left * right;
+        }
+        assert(0);
+        return 0.0;
+    }
+
+private:
+    Expression const *left_;
+    Expression const *right_;
+    int op_;
+};
+
+Ответ:
+
+struct Expression
+{
+  // put your code here
+  virtual double evaluate() const = 0;
+  virtual ~Expression() {} // чтобы не было утечек памяти
+};
+
+Source: binaryop.cpp
+
+============================== Step 8 ==============================
+
+Добавьте к иерархии из предыдущего упражнения класс
+FunctionCall. FunctionCall должен представлять вызов одной из
+предопределенных математических функций (sqrt - извлечение квадратного
+корня, abs - взятие модуля числа). Функция идентифицируется строкой
+переданной в качестве параметра конструктору. 
+
+Sample Input:
+There is no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Source: funcall.cpp

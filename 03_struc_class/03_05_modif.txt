@@ -1,0 +1,153 @@
+============================== Step 2 ==============================
+Модификаторы доступа позволяют ограничивать доступ к методам и полям
+класса.
+
+struct IntArray {
+  explicit IntArray(size_t size)	
+    : size_(size), data_(new int[size])
+  {}
+  ~IntArray() { delete [] data_; }
+  int & get(size_t i) { retrun data_[i]; } // возвращает ссылку на элемент массива по его номеру
+  size_t size() { return size_; }
+
+private:
+  size_t size_; // доступ к этим переменным имеет только код класса, снаружи невозможно
+  int * data_;
+};
+
+============================== Step 3 ==============================
+Ключевое слово struct можно заменить на class, тогда поля и методы по
+умолчанию будут private
+
+class IntArray {
+public:
+  explicit IntArray(size_t size)	
+    : size_(size), data_(new int[size])
+  {}
+  ~IntArray() { delete [] data_; }
+  int & get(size_t i) { retrun data_[i]; } // возвращает ссылку на элемент массива по его номеру
+  size_t size() { return size_; }
+
+private:
+  size_t size_; // доступ к этим переменным имеет только код класса, снаружи невозможно
+  int * data_;
+};
+
+============================== Step 4 ==============================
+Инварианты класса
+
+Выделение публичного интерфейса позволяет поддерживать инварианты
+класса (сохранять данные объекта в согласованном состоянии).
+
+struct IntArray {
+...
+size_t size_;
+int * data_; // массив размера size_
+};
+
+Для сохранения инвариантов класса:
+1) Все поля должны быть закрытыми
+2) Публичные методы должны сохранять инварианты класса
+
+Закрытие полей класса позволяет абстрагироваться от способа хранения
+данных объекта
+
+============================== Step 5 ==============================
+Публичный интерфейс (реализация)
+
+struct IntArray {
+  ...
+  void resize(size_t nsize) {
+    int * ndata = new int[nsize];
+    size_t n = nsize > size_ ? size_ : nsize;
+    for (size_t i = 0 ; i != n; ++ i)
+      ndata[i] = data_[i];
+    delete [] data_;
+    data_ = ndata;
+    size_ = nsize;
+  }
+private: // если бы мы не закрыли эти поля, то внешний юзер мог бы
+	 // изменить размер не изменив массив, на который указывает
+	 // data_
+  size_t size_;
+  int * data_;
+};
+
+============================== Step 6 ==============================
+Абстракция
+
+struct IntArray {
+public:
+  explicit IntArray(size_t size)	
+    : size_(size), data_(new int[size])
+  {}
+  ~IntArray() { delete [] data_; }
+  int & get(size_t i) { retrun data_[i]; }
+  size_t size() { return size_; }
+
+private:
+  size_t size_;
+  int * data_;
+};
+
+А теперь будем хранить размер массива в сомам массиве (в первом элементе),
+но публичный интерфейс менять не будем
+
+struct IntArray {
+public:
+  explicit IntArray(size_t size)	
+    : size_(size), data_(new int[size + 1])
+  {
+    data_[0] = size;
+  }
+  ~IntArray() { delete [] data_; }
+  int & get(size_t i) { retrun data_[i + 1]; }
+  size_t size() { return data_[0]; }
+
+private:
+  int * data_;
+};
+
+Сигнатура внешнего интерфейса не изменилась!
+
+============================== Step 7 ==============================
+
+Добавьте в класс String реализацию метода append. Метод append
+добавляет строку, переданную в качестве аргумента, в конец строки, на
+которой был вызван метод. Метод append должен оставлять поля str_ и
+size_ в согласованном состоянии.
+
+Sample Input:
+There is no test input
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds
+
+#include <cstddef>
+#include <cstring>
+
+struct String {
+    String(const char *str = "");
+    String(size_t n, char c);
+    ~String();
+
+    size_t size();
+    char &at(size_t idx);
+    const char *c_str();
+    int compare(String &str);
+
+    // для выделенеия и освобождения не используйте
+    // malloc/free, иначе ваша программа может не
+    // пройти тестирование
+    void append(String &str) {
+        // put your code here
+    }
+
+    size_t size_;
+    char *str_;
+};
+
+Source: str.cpp

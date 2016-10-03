@@ -1,0 +1,146 @@
+============================== Step 2 ==============================
+Перегрузка функций
+
+В отличие от C в C++ можно определить несколько функций с одинаковым
+именем, но разными параметрами.
+
+double square(double d) { return d * d; } 
+int square(int i) { return i * i; }
+
+При вызове функции по имени будет произведен поиск наиболее
+подходящей функции:
+
+int a = square (4); // square(int)
+double b = square (3.14); // square(double)
+double c = square (5);  // square(int)
+int d = square(b); // square(double)
+float e = square(2.71f); // square(double) - выбор наиболее подходящей
+      	  		 // функции компилятором
+
+============================== Step 3 ==============================
+Перегрузка методов
+
+struct Vector2D {
+  Vector2D(double x, double y) : x(x), y(y) {}
+  Vector2D mult(double d) const
+  	   { return Vector2D(x * d, y * d); }
+  double mult(Vector2D const& p) const 
+  { return x * p.x + y * p.y; }
+double x, y; 
+};
+
+Vector2D p(1, 2);
+Vector2D q = p.mult(10); // (10, 20) 
+double r = p.mult(q); // 50
+
+============================== Step 4 ==============================
+Перегрузка при наследовании
+
+struct File {
+  void write(char const * s); 
+  ...
+};
+
+struct FormattedFile : File 
+  { void write(int i);
+    void write(double d); 
+    using File::write; // хотим использовать методы write из
+    	  	       // родительского класса
+    ... 
+};
+
+FormattedFile f; f.write(4); f.write("Hello"); // заработает, только
+	      	      // если в FormattedFile есть using File::write;
+
+============================== Step 5 ==============================
+Правила перегрузки
+
+1. Если есть точное совпадение, то используется оно.
+
+2. Если нет функции, которая могла бы подойти с учётом
+преобразований, выдаётся ошибк
+
+3. Есть функции, подходящие с учётом преобразований
+   3.1 Расширение типов.
+     - char, signed char, short -> int
+     - unsigned char, unsigned short -> int/unsigned int 
+     - float -> double
+   3.2 Стандартные преобразования (числа, указатели).
+   3.3 Пользовательские преобразования.
+
+В случае нескольких параметров нужно, чтобы выбранная функция была
+**строго лучше&& остальных.
+
+NB: перегрузка выполняется на этапе компиляции.
+
+============================== Step 6 ==============================
+Есть три версии функции foo:
+
+void foo(char) { std::cout << "char" << std::endl; }
+void foo(signed char) { std::cout << "signed char" << std::endl; }
+void foo(unsigned char) { std::cout << "unsigned char" << std::endl; }
+
+Отметьте все верные утверждения относительно вызова функции foo.
+
+Ответ: 426.cpp
+* вызов foo(97) приведет к ошибке компиляции в результате вызова
+* foo('a') будет выведено char 
+
+============================== Step 7 ==============================
+В программе определены две функции:
+
+float square(float value) { return value*value; }
+double square(float value) { return (double)value*value; }
+
+Далее в программе есть вызов:
+
+double sq = square(2.0);
+
+Отметьте все верные утверждения из списка.
+
+Ответ: 427.cpp
+* программа не скомпилируется, потому что такая перегрузка функции
+square не допустима 
+
+http://www.cplusplus.com/doc/tutorial/variables/
+
+============================== Step 8 ==============================
+
+
+На предыдущей неделе вы реализовали класс String. В нем были
+определены два метода:
+
+char & at(size_t idx);
+char at(size_t idx) const;
+
+Кроме того есть два фрагмента кода:
+
+String greet("Hello");
+char ch1 = greet.at(0);
+и
+String const const_greet("Hello, Const!");
+char const &ch2 = const_greet.at(0);
+
+Отметьте все верные утверждения.
+
+* в char ch1 = greet.at(0) будет вызвана не const версия метода at в
+* char const & ch2 = const_greet.at(0) будет вызвана const версия
+ метода at 
+
+============================== Step 9 ==============================
+В программе есть следующие определения:
+
+void promotion(char &) { std::cout << "char" << std::endl; }
+void promotion(int &) { std::cout << "int" << std::endl; }
+void promotion(long &) { std::cout << "long" << std::endl; }
+
+Кроме того в программе есть вызов:
+
+short sh = 10;
+promotion(sh);
+
+Отметьте все верные утверждения.
+
+Источник: 429.cpp
+* вызов promotion(sh) не скомпилируется, так как нет ни одной
+ подходящей функции для вызова

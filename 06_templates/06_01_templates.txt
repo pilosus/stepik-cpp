@@ -1,0 +1,346 @@
+============================== Step 2 ==============================
+Проблема “одинаковых классов”
+
+struct ArrayInt {
+explicit ArrayInt(size_t size)
+  : data_(new int[size]) , 
+    size_(size) {}
+
+~ArrayInt() {delete [] data_;} 
+
+size_t size() const
+ { return size_; }
+
+int operator []( size_t i) const
+{ return data_[i]; }
+
+int & operator []( size_t i) 
+{ return data_[i]; }
+...
+private:
+  int * data_;
+  size_t size_; 
+};
+
+// То же самое, но для хранения float в массиве
+
+struct ArrayFlt {
+  explicit ArrayFlt(size_t size)
+    : data_(new float[size]) , size_(size) {}
+
+  ~ArrayFlt() {delete [] data_;} 
+
+  size_t size() const
+  { return size_; }
+
+  float operator []( size_t i) const
+  { return data_[i]; }
+
+  float & operator []( size_t i) { return data_[i]; }
+  ...
+
+private:
+  float * data_;
+  size_t size_; 
+};
+
+============================== Step 3 ==============================
+Решение в стиле C: макросы
+
+#define DEFINE_ARRAY(Name, Type)\ 
+struct Name { \ 
+explicit Name(size_t size) \
+   : data_(new Type[size]) \
+     , size_(size) {} \ 
+~Name() { delete [] data_; } \ 
+size_t size() const \
+{ return size_; } \
+\
+Type operator[](size_t i) const \
+{ return data_[i]; } \
+Type & operator[](size_t i) \
+{ return data_[i]; } \
+...\
+private: \
+  Type * data_; \
+  size_t size_; \
+
+----------
+
+DEFINE_ARRAY(ArrayInt, int);
+DEFINE_ARRAY(ArrayFlt, float);
+
+int main () {
+  ArrayInt ai(10); 
+  ArrayFlt af(20); 
+  ...
+  return 0;
+}
+
+Проблема тут в том, что препроцессор не отловит ошибки в передаче
+неправильных аргументов в DEFINE_ARRAY -- например, если передать
+несуществующий тип данных. Ошибки возникнут на этапе компиляции и их
+будет тяжело отлавливать, потому что они будут не написанном коде, а в
+коде, который получился после обработки препроцессором.
+
+Важно! Макросы должны быть однострочными! Поэтому длинные макросы надо
+разбивать бэкслешем! \
+
+============================== Step 4 ==============================
+Решение в стиле C++: шаблоны классов
+
+template <class Type > 
+struct Array {
+explicit Array(size_t size)
+  : data_(new Type[size])
+  , size_(size) {} 
+
+~Array()
+{ delete [] data_; } 
+
+size_t size() const
+{ return size_; }
+
+Type operator []( size_t
+{ return data_[i]; }
+
+Type & operator []( size_t i) 
+{ return data_[i]; }
+...
+
+private:
+  Type * data_;
+  size_t size_; 
+};
+
+
+int main () {
+  Array<int> ai(10); 
+  Array<float> af(20); 
+  ...
+  return 0;
+}
+
+Шаблоны обрабатываются на этапе компиляции -- и проходят
+синтаксическую проверку на этом этапе: будучи конструкциями языка.
+
+Начинается с ключевого слова template, а потом в угловых скобках
+перечисляются параметры этого шаблона.
+
+<class Type> -- параметром будет класс, в том числе и встроенный тип.
+<typename Type> -- полностью аналогично предыдущей строчке.
+
+============================== Step 5 ==============================
+Шаблоны классов с несколькими параметрами
+
+template <class Type, // тип элемента
+	 class SizeT = size_t, // тип размера. size_t по умолчанию
+	 class CRet = Type> // по умолчанию Type. 
+	 // тип возвращаемого значения -- нужно
+	 // чтобы избежать копирования больших объектов. Например,
+	 // когда в массиве хранятся объекты каких-то классов. Тогда
+	 // лучше возвращать константную ссылку, а для встроенных
+	 // типов возвращать значение
+struct Array {
+explicit Array(SizeT size)
+  : data_(new Type[size])
+  , size_(size) {} 
+
+~Array() {delete [] data_;}
+
+SizeT size() const {return size_;} 
+
+CRet operator []( SizeT i) const
+{ return data_[i]; }
+
+Type & operator []( SizeT i)
+{ return data_[i]; } 
+
+...
+private:
+  Type * data_;
+  SizeT size_; 
+};
+
+void foo ()
+{
+  Array<int> ai(10);
+  Array<float> af(20);
+  Array<Array<int>,
+      size_t ,
+      ArrayInt<int> const&> 
+    da (30);
+  ... 
+}
+// typedef -- синоним типа, нечто типа alias, который позволяет
+// сэкономить место и время печатания длинных типов
+typedef Array<int> Ints;
+typedef Array <Ints , size_t ,
+       Ints const &> IInts;
+
+void bar () 
+{
+IInts da (30); 
+}
+
+============================== Step 6 ==============================
+Реализуйте шаблонную версию класса Array. Список всех операций,
+которые должен поддерживать класс Array, приведен в шаблоне кода.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Signature:
+
+#include <cstddef>
+
+template <typename T>
+class Array
+{
+    // Список операций:
+    //
+    // explicit Array(size_t size = 0, const T& value = T())
+    //   конструктор класса, который создает
+    //   Array размера size, заполненный значениями
+    //   value типа T. Считайте что у типа T есть
+    //   конструктор, который можно вызвать без
+    //   без параметров, либо он ему не нужен.
+    //
+    // Array(const Array &)
+    //   конструктор копирования, который создает
+    //   копию параметра. Считайте, что для типа
+    //   T определен оператор присваивания.
+    //
+    // ~Array()
+    //   деструктор, если он вам необходим.
+    //
+    // Array& operator=(...)
+    //   оператор присваивания.
+    //
+    // size_t size() const
+    //   возвращает размер массива (количество
+    //                              элементов).
+    //
+    // T& operator[](size_t)
+    // const T& operator[](size_t) const
+    //   две версии оператора доступа по индексу.
+};
+
+Source: array.cpp
+
+============================== Step 7 ==============================
+
+
+В предыдущей версии предполагается, что для типа T определен оператор
+присваивания или он ему не нужен (например, для примитивных типов он
+не нужен). При создании шаблонных классов контейнеров (вроде Array и
+не только) разумно стараться минимизировать требования к типам
+шаблонных параметров. Поэтому усложним задачу, реализуйте класс Array
+не полагаясь на то, что для типа T определен оператор
+присваивания. Hints: используйте placement new и явный вызов
+деструктора, чтобы создавать и уничтожать объекты, аллоцировать
+правильно выровненную память можно с помощью new char[N * sizeof(T)],
+где N - количество элементов массива.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Signature:
+#include <cstddef>
+
+template <typename T>
+class Array
+{
+    // Список операций:
+    //
+    // Array(size_t size, const T& value = T())
+    //   конструктор класса, который создает
+    //   Array размера size, заполненный значениями
+    //   value типа T. Считайте что у типа T есть
+    //   конструктор, который можно вызвать без
+    //   без параметров, либо он ему не нужен.
+    //
+    // Array()
+    //   конструктор класса, который можно вызвать
+    //   без параметров. Должен создавать пустой
+    //   Array.
+    //
+    // Array(const Array &)
+    //   конструктор копирования, который создает
+    //   копию параметра. Для типа T оператор
+    //   присвивания не определен.
+    //
+    // ~Array()
+    //   деструктор, если он вам необходим.
+    //
+    // Array& operator=(...)
+    //   оператор присваивания.
+    //
+    // size_t size() const
+    //   возвращает размер массива (количество
+    //                              элемнтов).
+    //
+    // T& operator[](size_t)
+    // const T& operator[](size_t) const
+    //   две версии оператора доступа по индексу.
+};
+
+Source: array2.cpp
+
+============================== Step 8 ==============================
+Шаблонные классы можно наследовать. Реализуйте шаблонную структуру
+ValueHolder с одним типовым параметром T, унаследованную от интерфейса
+ICloneable. Интерфейс ICloneable содержит всего один виртуальный метод
+ICloneable* clone() const, который должен вернуть указатель на копию
+объекта, на котором он был вызван (объект должен быть создан в
+куче). Шаблон ValueHolder, как говорит его название, хранит всего одно
+значение (назовите его data_) типа T (для типа T определен конструктор
+копирования). Не делайте поле data_ закрытым (поэтому в данном случае
+мы явно пишем, что ValueHolder должна быть структурой).
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Signature:
+
+struct ICloneable
+{
+	virtual ICloneable* clone() const = 0;
+	virtual ~ICloneable() { }
+};
+
+// Шаблон ValueHolder с типовым параметром T,
+// должен содержать одно открытое поле data_
+// типа T.
+//
+// В шаблоне ValueHolder должен быть определен
+// конструктор от одного параметра типа T,
+// который инициализирует поле data_.
+//
+// Шаблон ValueHolder должен реализовывать
+// интерфейс ICloneable, и возвращать указатель
+// на копию объекта, созданную в куче, из метода
+// clone.
+
+template <typename T>
+struct ValueHolder // дальше самостоятельно
+
+Source: clone.cpp

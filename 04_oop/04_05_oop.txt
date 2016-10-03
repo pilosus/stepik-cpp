@@ -1,0 +1,623 @@
+============================== Step 2 ==============================
+Объектно-ориентированное программирование -- концпеция
+программирования, основанная на понятиях объектов и классов.
+
+Основные принципы:
+• инкапсуляция, // данные + методы
+• наследование, // наследование классов
+• полиморфизм,  // возможность работы с подклассами через ссылку на
+  		// базовый класс
+• абстракция.   // сокрытие полей для других классов
+
+Подробнее о принципах проектирования ООП-программ можно узнать по
+ключевым слову „шаблоны проектирования”.
+
+============================== Step 3 ==============================
+Как правильно построить иерархию?
+
+============================== Step 4 ==============================
+Как правильно построить иерархию?
+Квадрат --  это прямоугольник, у которого все стороны равны.
+
+// возможно неопределенное поведение, если мы передадим сюда квардрат
+void double_width(Rectangle & r) { 
+     r.set_width(r.width() * 2);
+}
+
+============================== Step 5 ==============================
+Как правильно построить иерархию?
+Прямоугольник задаётся двумя сторонами, а квадрат--  одной.
+
+// если передать сюда прямоугольник, то результат будет неверной
+double area(Square const& s) { 
+  return s.widht() * s.width();
+}
+
+============================== Step 6 ==============================
+Как правильно построить иерархию?
+
+Правильное решение --  сделать эти классы независимыми
+
+
+============================== Step 7 ==============================
+Агрегирование vs наследование
+
+• Агрегирование -- это включение объекта одного класса в качестве поля
+в другой.
+
+• Наследование устанавливает более сильные связи между классами,
+нежели агрегирование:
+   • приведение между объектами, 
+   • доступ к protected членам.
+
+• Если наследование можно заменить легко на агрегирование, то это
+нужно сделать.
+
+Примеры некорректного наследования
+
+• Класс Circle унаследовать от класса Point.
+• Класс LinearSystem унаследовать от класса Matrix.
+
+============================== Step 8 ==============================
+Принцип подстановки Барбары Лисков
+
+Liskov Substitution Principle (LSP):
+Функции, работающие с базовым классом, должны иметь возможность
+работать с подклассами не зная об этом.
+
+Этот принцип является важнейшим критерием при построении иерархий
+наследования.
+
+Другие формулировки
+• Поведение наследуемых классов не должно противоречить поведению,
+заданному базовым классом.
+• Подкласс не должен требовать от вызывающего кода больше, чем
+базовый класс, и не должен предоставлять вызывающему коду меньше, чем
+базовый класс
+
+============================== Step 9 ==============================
+
+Для выполнения следующего задания нам потребуются некоторые
+приготовления (задания становятся все больше). Для начала, иерархия
+классов Expression представляет абстрактное синтаксическое дерево
+(AST) очень простого языка. Мы немного изменим интерфейс базового
+класса Expression, добавим в него виртуальный метод:
+
+virtual Expression * transform(Transformer *tr) const = 0;
+
+Этот метод будет возвращать полностью новое (т. е. все узлы должны
+копироваться, даже если никаких изменений в дереве не требуется) АСТ,
+построенное с помощью реализации интерфейса Transformer из исходного
+дерева. А сам интерфейс Transformer будет выглядеть следующим образом:
+
+struct Transformer
+{
+    virtual ~Transformer() {}
+    virtual Expression *transformNumber(Number const *) = 0;
+    virtual Expression *transformBinaryOperation(BinaryOperation const
+    *) = 0;
+    virtual Expression *transformFunctionCall(FunctionCall const *) =
+    0;
+    virtual Expression *transformVariable(Variable const *) = 0;
+};
+
+Все классы вам уже должны быть известны, кроме класса Variable - мы
+добавим его к нашей иерархии, и как вы можете догадаться, он будет
+представлять переменную. Определение класса Variable будет дано далее.
+
+Интерфейс Transformer — это реализация шаблона проектирования Visitor,
+далее мы детально посмотрим на реализацию метода transform для классов
+иерархии Expression.
+
+============================== Step 10 ==============================
+
+
+
+Рассмотрим реализацию метода transform на примере простого класса
+Number:
+
+Expression * Number::transform(Transformer *tr) const
+{
+    return tr->transformNumber(this);
+}
+
+Рассмотрим пример использования этой конструкции:
+
+Expression *expression = new Number(10.0);
+Transformer *transformer = new AConcreteTransformer();
+Expression *new_expression = expression->transform(transformer);
+
+Обратите внимание, что несмотря на то, что тип переменной expression
+Expression *, а не Number *, в результате вызова
+expression->transform(transformer) будет вызван именно метод transform
+класса Number (потому что метод transform виртуальный), а он, в свою
+очередь, вызовет метод transfromNumber(Number const *) класса
+Transformer, т. е. мы смогли определить конкретный класс, используя
+только указатель на Expression.
+
+Реализация метода transform для других классов иерархии Expression
+идентична c точностью до имени вызываемого метода
+(transformBinaryOperation, transformFunctionCall и др). Этот трюк
+называется двойной диспетчеризацией, он позволяет отличить конкретный
+класс некоторой иерархии от других.
+
+============================== Step 11 ==============================
+
+С++ предоставляет и более простой способ узнать конкретный класс по
+указателю (или ссылке) на базовый класс. Для этого можно использовать
+оператор dynamic_cast. Например, если у вас есть указатель Expression
+*, и вы хотите узнать, указывает ли этот указатель на самом деле на
+объект Number, то сделать это можно так:
+
+Expression *expression = parse(code);
+Number *number = dynamic_cast<Number *>(expression);
+if (number)
+    std::cout << "It's a number" << std::endl;
+else
+    std::cout << "It is not a number" << std::endl;
+
+Если expression действительно указывает на объект Number (или на один
+из его наследников, но в нашем примере их нет), то оператор
+dynamic_cast<Number *> вернет правильный указатель. Если expression
+указывает не на класс Number, то будет возвращен нулевой
+указатель. Т. е. если в переменной number хранится нулевой указатель,
+значит expression не указывает на Number на самом деле.
+
+Для правильной работы оператора dynamic_cast в нашем примере
+требуется, чтобы класс Expression был полиморфным, т. е. в нем должна
+быть как минимум одна виртуальная функция (например,
+деструктор). Стандарт определяет работу dynamic_cast и с не
+полиморфными типами, но в этом случае никаких проверок типа времени
+исполнения выполняться не будет - часто, это не то, что требуется.
+
+Если передать оператору dynamic_cast нулевой указатель, то он просто
+вернет нулевой указатель нужного типа, поэтому проверять указатель
+перед передачей в dynamic_cast не нужно.
+
+============================== Step 12 ==============================
+
+Теперь посмотрим на новый класс Variable:
+
+struct Variable : Expression
+{
+    Variable(std::string const &name) : name_(name) { }
+    std::string const &name() const { return name_; }
+    double evaluate() const
+    {
+        assert(0);
+        return 0.0;
+    }
+    Expression *transform(Transformer *tr) const { return
+    tr->transfromVariable(this); }
+private:
+    std::string const name_;
+};
+
+Класс не представляет из себя ничего особенного, за исключением метода
+evaluate. Мы пока не знаем, откуда взять значение  переменной, поэтому
+вызов evaluate у переменной считаем ошибкой и используем assert (мы
+исправим это в будущем).
+
+============================== Step 13 ==============================
+
+Реализуйте класс CopySyntaxTree, который, используя шаблон Visitor,
+выполняет копирование AST. Интерфейсы всех используемых классов
+приведены для удобства — не изменяйте их. Шаблон класса CopySyntaxTree
+находится в самом низу.
+
+Sample Input:
+There is not tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Оригинальная сигнатура:
+
+#include <string>
+
+struct Transformer;
+struct Number;
+struct BinaryOperation;
+struct FunctionCall;
+struct Variable;
+
+struct Expression
+{
+    virtual ~Expression() { }
+    virtual double evaluate() const = 0;
+    virtual Expression *transform(Transformer *tr) const = 0;
+};
+
+struct Transformer
+{
+    virtual ~Transformer() { }
+    virtual Expression *transformNumber(Number const *) = 0;
+    virtual Expression *transformBinaryOperation(BinaryOperation const
+    *) = 0;
+    virtual Expression *transformFunctionCall(FunctionCall const *) =
+    0;
+    virtual Expression *transformVariable(Variable const *) = 0;
+};
+
+struct Number : Expression
+{
+    Number(double value);
+    double value() const;
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+
+private:
+    double value_;
+};
+
+struct BinaryOperation : Expression
+{
+    enum {
+        PLUS = '+',
+        MINUS = '-',
+        DIV = '/',
+        MUL = '*'
+    };
+    BinaryOperation(Expression const *left, int op, Expression const
+    *right);
+    ~BinaryOperation();
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+    Expression const *left() const;
+    Expression const *right() const;
+    int operation() const;
+
+private:
+    Expression const *left_;
+    Expression const *right_;
+    int op_;
+};
+
+struct FunctionCall : Expression
+{
+    FunctionCall(std::string const &name, Expression const *arg);
+    ~FunctionCall();
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+    std::string const &name() const;
+    Expression const *arg() const;
+
+private:
+    std::string const name_;
+    Expression const *arg_;
+};
+
+struct Variable : Expression
+{
+    Variable(std::string const name);
+    std::string const & name() const;
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+
+private:
+    std::string const name_;
+};
+
+
+/**
+ * реализуйте все необходимые методы класса
+ * вы можете определять любые вспомогательные
+ * методы, если хотите
+ */
+struct CopySyntaxTree : Transformer
+{
+    Expression *transformNumber(Number const *number)
+    { }
+
+    Expression *transformBinaryOperation(BinaryOperation const *binop)
+    { }
+
+    Expression *transformFunctionCall(FunctionCall const *fcall)
+    { }
+
+    Expression *transformVariable(Variable const *var)
+    { }
+};
+
+Source: copy.cpp
+
+============================== Step 14 ==============================
+Копирование AST можно было реализовать, например, просто добавив
+виртуальный метод clone, похожий на метод evaluate. Но используя
+Visitor, через единственный метод transform мы можем реализовать не
+только копирование. В этой задаче вам необходимо реализовать
+сворачивание констант в дереве (constant folding). Например, у нас
+есть выражение (точнее, дерево, описывающее это выражение) abs(var *
+sqrt(32.0 - 16.0)), на выходе мы должны получить дерево для следующего
+выражения abs(var * 4.0), т. е. подвыражение sqrt(32.0 - 16.0) было
+вычислено.
+
+Для того, чтобы определить, что выражение (Expression) на самом деле
+является числом (Number), используйте оператор dynamic_cast.
+
+Все промежуточные узлы дерева, которые вы создали, нужно освободить.
+
+Sample Input:
+There is no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Начальная сигнатура:
+
+#include <cassert>
+#include <string>
+#include <cmath>
+
+struct Transformer;
+struct Number;
+struct BinaryOperation;
+struct FunctionCall;
+struct Variable;
+
+struct Expression
+{
+    virtual ~Expression() { }
+    virtual double evaluate() const = 0;
+    virtual Expression *transform(Transformer *tr) const = 0;
+};
+
+struct Transformer
+{
+    virtual ~Transformer() { }
+    virtual Expression *transformNumber(Number const *) = 0;
+    virtual Expression *transformBinaryOperation(BinaryOperation const
+    *) = 0;
+    virtual Expression *transformFunctionCall(FunctionCall const *) =
+    0;
+    virtual Expression *transformVariable(Variable const *) = 0;
+};
+
+struct Number : Expression
+{
+    Number(double value);
+    double value() const;
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+
+private:
+    double value_;
+};
+
+struct BinaryOperation : Expression
+{
+    enum {
+        PLUS = '+',
+        MINUS = '-',
+        DIV = '/',
+        MUL = '*'
+    };
+    BinaryOperation(Expression const *left, int op, Expression const
+    *right);
+    ~BinaryOperation();
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+    Expression const *left() const;
+    Expression const *right() const;
+    int operation() const;
+
+private:
+    Expression const *left_;
+    Expression const *right_;
+    int op_;
+};
+
+struct FunctionCall : Expression
+{
+    FunctionCall(std::string const &name, Expression const *arg);
+    ~FunctionCall();
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+    std::string const &name() const;
+    Expression const *arg() const;
+
+private:
+    std::string const name_;
+    Expression const *arg_;
+};
+
+struct Variable : Expression
+{
+    Variable(std::string const name);
+    std::string const & name() const;
+    double evaluate() const;
+    Expression *transform(Transformer *tr) const;
+
+private:
+    std::string const name_;
+};
+
+
+/**
+ * реализуйте все необходимые методы
+ * если считаете нужным, то можете
+ * заводить любые вспомогательные
+ * методы
+ */
+struct FoldConstants : Transformer
+{
+    Expression *transformNumber(Number const *number)
+    { }
+
+    Expression *transformBinaryOperation(BinaryOperation const *binop)
+    { }
+
+    Expression *transformFunctionCall(FunctionCall const *fcall)
+    { }
+
+    Expression *transformVariable(Variable const *var)
+    {  }
+};
+
+Source: copy.cpp
+
+============================== Step 15 ==============================
+Для выполнения заключительного задания нам потребуется еще один
+интерфейс:
+
+struct Scope
+{
+    virtual ~Scope() { }
+    virtual double variableValue(std::string const &name) const = 0;
+};
+
+Этот интерфейс поможет нам реализовать метод evaluate для класса
+Variable. Обратите внимание, что мы не предоставляем конкретной
+реализации интерфейса Scope, и для выполнения следующего задания это
+не важно. Вы можете использовать любую реализацию этого интерфейса для
+тестирования.
+
+
+============================== Step 16 ==============================
+
+Измените методы evaluate во всех классах так, чтобы они принимали
+указатель на класс Scope. Используя Scope, реализуйте evaluate для
+класса Variable. Предполагается, что вы узнаете значение переменной по
+имени, используя метод variableValue.
+
+Sample Input:
+There is no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Оригинал:
+#include <cassert>
+#include <string>
+#include <cmath>
+
+class Transformer;
+class Number;
+class BinaryOperation;
+class FunctionCall;
+class Variable;
+
+struct Scope
+{
+    virtual ~Scope() { }
+    virtual double variableValue(std::string const &name) const = 0;
+};
+
+struct Expression
+{
+    virtual ~Expression() { }
+
+    virtual double evaluate() const = 0;
+
+    virtual Expression *transform(Transformer *tr) const = 0;
+};
+
+struct Number : Expression
+{
+    Number(double value);
+    double value() const;
+
+    double evaluate() const
+    {
+        return value_;
+    }
+
+    Expression *transform(Transformer *tr) const;
+
+private:
+    double value_;
+};
+
+struct BinaryOperation : Expression
+{
+    enum {
+        PLUS = '+',
+        MINUS = '-',
+        DIV = '/',
+        MUL = '*'
+    };
+    BinaryOperation(Expression const *left, int op, Expression const
+    *right);
+    ~BinaryOperation();
+
+    double evaluate() const
+    {
+        double const l = left()->evaluate();
+        double const r = right()->evaluate();
+
+        switch (operation())
+        {
+        case PLUS: return l + r;
+        case MINUS: return l - r;
+        case MUL: return l * r;
+        case DIV: return l / r;
+        }
+
+        assert(0);
+        return 0.0l;
+    }
+
+    Expression *transform(Transformer *tr) const;
+    Expression const *left() const;
+    Expression const *right() const;
+    int operation() const;
+
+private:
+    Expression const *left_;
+    Expression const *right_;
+    int op_;
+};
+
+struct FunctionCall : Expression
+{
+    FunctionCall(std::string const &name, Expression const *arg);
+    ~FunctionCall();
+
+    double evaluate() const
+    {
+        double const value = arg()->evaluate();
+        if (name() == "sqrt")
+            return sqrt(value);
+        if (name() == "abs")
+            return fabs(value);
+        assert(0);
+        return 0.0l;
+    }
+
+    Expression *transform(Transformer *tr) const;
+    std::string const &name() const;
+    Expression const *arg() const;
+
+private:
+    std::string const name_;
+    Expression const *arg_;
+};
+
+struct Variable : Expression
+{
+    Variable(std::string const name);
+    std::string const & name() const;
+
+    double evaluate() const
+    {
+        assert(0);
+        return 0.0;
+    }
+
+    Expression *transform(Transformer *tr) const;
+
+private:
+    std::string const name_;
+};
+
+Source: copy2.cpp
+

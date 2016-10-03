@@ -1,0 +1,265 @@
+============================== Step 2 ==============================
+Переопределение арифметических и битовых операторов
+
+struct String {
+  String( char const * cstr ) { ... }
+  // определяем внутри метода, потому что изменяем сам объект
+  String & operator+=(String const& s) { 
+  ...
+  return *this; 
+  }
+  //String operator+(String const& s2) const {...}
+};
+
+// определяем снаружи, потому что внутренний метод работает только для
+// двух объектов типа String. Если будет конкатенация со строкой в
+// стиле C, то работать не будет
+// Первый аргумент копирует строчку, а второй -- это ссылка,
+// экономящая на копировании
+String operator+(String s1, String const& s2) { 
+  return s1 += s2;
+}
+
+String s1("world");
+String s2 = "Hello " + s1; // Hello задано как строка в стиле С. Оно
+// сработает, потому что в String есть конструктор приведения для
+// строк С. Этот пример скомпилируется.
+// Если поменять местами Hello и s1, то будут работать оба варианта
+
+============================== Step 3 ==============================
+
+Вам дан класс Rational, который представляет рациональное число. В нем
+определены методы add, sub, mul и div, которые прибавляют к нему
+число, отнимают число, умножают на число и делят на число
+соответственно. Кроме того в нем определен метод neg, который меняет
+знак на противоположный. Вам нужно определить операторы +=, -=, *=, /=
+для класса Rational, так чтобы они могли принимать в качестве
+аргументов и объекты типа Rational и целые числа. Кроме того вам
+необходимо определить операторы унарного минуса и плюса для класса
+Rational.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Сигнатура:
+
+struct Rational
+{
+    Rational(int numerator = 0, int denominator = 1);
+
+    void add(Rational rational);
+    void sub(Rational rational);
+    void mul(Rational rational);
+    void div(Rational rational);
+
+    void neg();
+    void inv();
+    double to_double() const;
+
+private:
+    int numerator_;
+    unsigned denominator_;
+};
+
+Source: rational.cpp
+
+============================== Step 4 ==============================
+Определите для класса Rational операторы сложения, вычитания,
+умножения и деления, так чтобы объекты типа Rational можно было
+складывать (вычитать, умножать и делить) не только друг с другом но и
+с целыми числами.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Сигнатура:
+
+struct Rational
+{
+    Rational(int numerator = 0, int denominator = 1);
+
+    void add(Rational rational);
+    void sub(Rational rational);
+    void mul(Rational rational);
+    void div(Rational rational);
+
+    void neg();
+    void inv();
+    double to_double() const;
+
+    Rational& operator+=(Rational rational);
+    Rational& operator-=(Rational rational);
+    Rational& operator*=(Rational rational);
+    Rational& operator/=(Rational rational);
+
+    Rational operator-();
+    Rational operator+();
+
+private:
+    int numerator_;
+    unsigned denominator_;
+};
+
+Source: rational.cpp (или rational2.cpp)
+
+============================== Step 5 ==============================
+“Правильное” переопределение операторов сравнения
+
+bool operator==(String const& a, String const& b) { 
+  return ...
+}
+
+bool operator!=(String const& a, String const& b) {
+  return !(a == b); 
+}
+
+bool operator<(String const& a, String const& b) { 
+  return ...
+}
+
+bool operator>(String const& a, String const& b) {
+  return b < a; 
+}
+
+bool operator<=(String const& a, String const& b) { 
+  return !(b < a);
+}
+
+bool operator>=(String const& a, String const& b) {
+  return !(a < b); 
+}
+
+То есть достаточно определить == и <, а остальные определяются с
+помощью этих двух.
+
+Можно даже определить только <, тогда == можно записать так:
+!(a < b) && !(b < a)
+
+Почему же тогда надо иногда определить == специфичным образом?
+Потому что тут оператор < вызывается дважды и дважды !. Поэтому это
+неэффективно.
+
+============================== Step 6 ==============================
+
+Еще одна важная группа операторов, которые полезно реализовать для
+класса рациональных чисел - операторы сравнения. Реализуйте операторы
+<, <=, >, >=, ==, != для класса Rational, так чтобы можно было
+сравнивать объекты класса Rational не только друг с другом, но и с
+целыми числами.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Сигнатура:
+
+struct Rational
+{
+    Rational(int numerator = 0, int denominator = 1);
+
+    void add(Rational rational);
+    void sub(Rational rational);
+    void mul(Rational rational);
+    void div(Rational rational);
+
+    void neg();
+    void inv();
+    double to_double() const;
+
+    Rational& operator+=(Rational rational);
+    Rational& operator-=(Rational rational);
+    Rational& operator*=(Rational rational);
+    Rational& operator/=(Rational rational);
+
+    Rational operator-();
+    Rational operator+();
+
+private:
+    int numerator_;
+    unsigned denominator_;
+};
+
+Rational operator+(Rational lhs, Rational rhs);
+Rational operator-(Rational lhs, Rational rhs);
+Rational operator*(Rational lhs, Rational rhs);
+Rational operator/(Rational lhs, Rational rhs);
+
+Source: rational.cpp (и rational3.cpp)
+
+============================== Step 7 ==============================
+О чём стоит помнить
+
+• Стандартная семантика операторов.
+void operator+(A const & a, A const& b) {} // плохая идея - оператор +
+     		       	      	           // ничего не возвращает!
+
+• Приоритет операторов // для перегруженных операторов такой же, как
+  	    	       // для встроенных
+Vector a, b, c;
+c = a + a ^ b * a; //????? Порядок вычисления непонятен! Потому что
+  	    	   //  перегруженный ^ непонятно как вычисляется.
+		   // Поэтому лучше добавить скобки a + (a^b) * a;
+
+
+• Хотя бы один из параметров должен быть пользовательским.
+void operator*(double d, int i) {} // ошибка, т.к. тут два встроенных
+     		      	         // типа и ниодного пользовательского
+
+
+============================== Step 8 ==============================
+
+Добавьте в класс Rational оператор приведения к double. Все операторы
+из предыдущих заданий отсутствуют и реализовывать их не нужно. Важное
+замечание:  добавлять оператор преобразования к double в класс
+Rational не самая удачная идея, например, по тому, что при таком
+преобразовании может происходить потеря точности. Эта задача дана
+исключительно с целью ознакомления с правильным порядком перегрузки
+таких операторов.
+
+Sample Input:
+There are no tests for this task
+
+Sample Output:
+OK
+
+Memory Limit: 256 MB
+Time Limit: 5 seconds 
+
+Signature:
+struct Rational
+{
+    Rational(int numerator = 0, int denominator = 1);
+
+    void add(Rational rational);
+    void sub(Rational rational);
+    void mul(Rational rational);
+    void div(Rational rational);
+
+    void neg();
+    void inv();
+    double to_double() const;
+
+private:
+    int numerator_;
+    unsigned denominator_;
+};
+
+Source: rational.cpp
+
